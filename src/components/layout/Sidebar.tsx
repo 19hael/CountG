@@ -9,7 +9,6 @@ import {
   Users, 
   Calendar, 
   FileText, 
-  Settings,
   LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,7 +21,6 @@ const menuItems = [
   { name: "Clientes", href: "/clientes", icon: Users },
   { name: "Agenda", href: "/agenda", icon: Calendar },
   { name: "Reportes", href: "/reportes", icon: FileText },
-  { name: "Admin", href: "/admin", icon: Settings },
 ];
 
 export function Sidebar() {
