@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { TrendChart } from "@/components/dashboard/TrendChart";
+import { WebAnalyticsWidget } from "@/components/dashboard/WebAnalyticsWidget";
 import { ArrowDownRight, ArrowUpRight, DollarSign, Package, Users, Wallet, Loader2 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -134,8 +135,13 @@ export default function Home() {
           <TrendChart />
         </div>
         <div className="col-span-3 space-y-4">
+          {/* Web Analytics Widget */}
+          <div className="h-[350px]">
+             <WebAnalyticsWidget />
+          </div>
+          
           {/* Critical Inventory Widget */}
-          <div className="bg-card border border-border rounded-xl p-6 shadow-sm h-full">
+          <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Inventario Crítico</h3>
               <Package className="w-5 h-5 text-muted-foreground" />
