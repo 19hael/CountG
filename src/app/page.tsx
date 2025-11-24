@@ -120,12 +120,13 @@ export default function Home() {
           icon={ArrowUpRight}
           color="primary"
         />
+        {/* Replaced 'Clientes Activos' with 'Transacciones' to avoid confusion about user visibility */}
         <SummaryCard
-          title="Clientes Activos"
-          value={metrics.clientes.toString()}
-          trend="+0"
+          title="Transacciones"
+          value={transactions.length.toString()}
+          trend="Mes actual"
           trendUp={true}
-          icon={Users}
+          icon={DollarSign}
           color="primary"
         />
       </div>

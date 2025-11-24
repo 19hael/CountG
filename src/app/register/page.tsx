@@ -23,7 +23,7 @@ export default function RegisterPage() {
     setError(null);
 
     try {
-      // 1. Sign up user
+      // 1. Sign up user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -38,33 +38,52 @@ export default function RegisterPage() {
       if (authError) throw authError;
 
       if (authData.user) {
-        // 2. Create Company Record (Ideally this is done via Database Trigger, but doing client-side for MVP if RLS allows, or rely on Trigger)
-        // For now, we'll assume a Trigger handles the DB insertion based on the Auth User metadata or we insert manually if policies allow.
-        // Let's try manual insertion for robustness if policies are open, otherwise we rely on the trigger.
+        // 2. Create Company Record
+        // Note: In a real production app with strict RLS, this might be handled by a Database Trigger (handle_new_user)
+        // to avoid client-side permission issues. However, for this MVP, we attempt client-side insert.
+        // If RLS blocks this, we should rely on the trigger or update policies.
         
-        // Create Company
         const { data: companyData, error: companyError } = await supabase
           .from('empresas')
-          .insert([{ nombre: formData.companyName, email: formData.email }])
+          .insert([{ 
+            nombre: formData.companyName, 
+            email: formData.email, // Linking company to creator's email for reference
+            created_at: new Date().toISOString()
+          }])
           .select()
           .single();
 
-        if (!companyError && companyData) {
-            // Create User Record linked to Company
-            await supabase
+        if (companyError) {
+          console.error("Error creating company:", companyError);
+          // If company creation fails, we might want to stop or warn. 
+          // But if it's a duplicate or RLS issue, we might proceed if the trigger handled it.
+          // For now, let's assume if it fails, we can't proceed with linking.
+          throw new Error("Error al crear la empresa. Por favor contacte soporte.");
+        }
+
+        if (companyData) {
+            // 3. Create User Record linked to Company
+            const { error: userError } = await supabase
                 .from('usuarios')
                 .insert([{ 
                     id: authData.user.id, // Match Auth ID
                     email: formData.email, 
                     nombre: formData.fullName, 
                     empresa_id: companyData.id,
-                    rol: 'admin'
+                    rol: 'admin',
+                    created_at: new Date().toISOString()
                 }]);
+            
+            if (userError) {
+              console.error("Error creating user profile:", userError);
+              throw new Error("Error al crear el perfil de usuario.");
+            }
         }
       }
 
       router.push("/");
     } catch (err: any) {
+      console.error("Registration error:", err);
       setError(err.message || "Error al registrarse");
     } finally {
       setLoading(false);
