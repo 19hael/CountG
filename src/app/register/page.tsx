@@ -24,6 +24,7 @@ export default function RegisterPage() {
 
     try {
       // 1. Sign up user in Supabase Auth
+      // The Database Trigger (handle_new_user) will automatically create the Company and User Profile
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -37,50 +38,7 @@ export default function RegisterPage() {
 
       if (authError) throw authError;
 
-      if (authData.user) {
-        // 2. Create Company Record
-        // Note: In a real production app with strict RLS, this might be handled by a Database Trigger (handle_new_user)
-        // to avoid client-side permission issues. However, for this MVP, we attempt client-side insert.
-        // If RLS blocks this, we should rely on the trigger or update policies.
-        
-        const { data: companyData, error: companyError } = await supabase
-          .from('empresas')
-          .insert([{ 
-            nombre: formData.companyName, 
-            email: formData.email, // Linking company to creator's email for reference
-            created_at: new Date().toISOString()
-          }])
-          .select()
-          .single();
-
-        if (companyError) {
-          console.error("Error creating company:", companyError);
-          // If company creation fails, we might want to stop or warn. 
-          // But if it's a duplicate or RLS issue, we might proceed if the trigger handled it.
-          // For now, let's assume if it fails, we can't proceed with linking.
-          throw new Error("Error al crear la empresa. Por favor contacte soporte.");
-        }
-
-        if (companyData) {
-            // 3. Create User Record linked to Company
-            const { error: userError } = await supabase
-                .from('usuarios')
-                .insert([{ 
-                    id: authData.user.id, // Match Auth ID
-                    email: formData.email, 
-                    nombre: formData.fullName, 
-                    empresa_id: companyData.id,
-                    rol: 'admin',
-                    created_at: new Date().toISOString()
-                }]);
-            
-            if (userError) {
-              console.error("Error creating user profile:", userError);
-              throw new Error("Error al crear el perfil de usuario.");
-            }
-        }
-      }
-
+      // If successful, redirect (or show "Check email" if email confirmation is enabled)
       router.push("/");
     } catch (err: any) {
       console.error("Registration error:", err);
