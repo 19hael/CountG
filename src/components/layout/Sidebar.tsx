@@ -31,8 +31,8 @@ export function Sidebar() {
   return (
     <aside className="w-64 bg-card border-r border-border h-screen fixed left-0 top-0 flex flex-col z-10">
       <div className="p-6 border-b border-border">
-        <h1 className="text-2xl font-bold text-primary tracking-tight">CountG</h1>
-        <p className="text-xs text-muted-foreground">Gestión Empresarial</p>
+        <h1 className="text-2xl font-bold text-primary tracking-tight">Vixai</h1>
+        <p className="text-xs text-muted-foreground">Gestión Inteligente</p>
       </div>
       
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
