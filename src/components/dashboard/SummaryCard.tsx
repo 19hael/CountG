@@ -19,7 +19,7 @@ export function SummaryCard({ title, value, trend, trendUp, icon: Icon, color = 
   };
 
   return (
-    <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+    <div className="glass rounded-xl p-6 shadow-sm border border-white/5 hover:border-indigo-500/30 transition-colors">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">{title}</p>

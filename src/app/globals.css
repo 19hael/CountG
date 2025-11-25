@@ -3,102 +3,133 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
   --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
 :root {
-  /* Vixai Theme: Red & Black */
-  --background: #000000; /* Pure Black */
-  --foreground: #ffffff; /* Pure White */
+  /* Elegant Dark Theme - Deep Navy/Purple Base */
+  --background: #0a0b1e; /* Deep space blue */
+  --foreground: #e2e8f0;
 
-  --card: #0a0a0a; /* Very Dark Gray */
-  --card-foreground: #ffffff;
+  --card: #11132b; /* Slightly lighter navy */
+  --card-foreground: #e2e8f0;
 
-  --popover: #0a0a0a;
-  --popover-foreground: #ffffff;
+  --popover: #11132b;
+  --popover-foreground: #e2e8f0;
 
-  --primary: #dc2626; /* Red 600 */
+  --primary: #6366f1; /* Indigo */
   --primary-foreground: #ffffff;
 
-  --secondary: #171717; /* Neutral 900 */
+  --secondary: #8b5cf6; /* Violet */
   --secondary-foreground: #ffffff;
 
-  --muted: #262626; /* Neutral 800 */
-  --muted-foreground: #a3a3a3; /* Neutral 400 */
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
 
-  --accent: #dc2626; /* Red 600 as accent too */
-  --accent-foreground: #ffffff;
+  --accent: #2e1065; /* Deep purple accent */
+  --accent-foreground: #e2e8f0;
 
-  --destructive: #7f1d1d; /* Red 900 */
-  --destructive-foreground: #ffffff;
-
-  --border: #262626;
-  --input: #262626;
-  --ring: #dc2626;
-
-  --radius: 0.5rem;
-}
-
-/* Keeping only Dark mode as requested */
-.light {
-  --background: #ffffff;
-  --foreground: #000000;
-  --card: #f5f5f5;
-  --card-foreground: #000000;
-  --popover: #ffffff;
-  --popover-foreground: #000000;
-  --primary: #dc2626;
-  --primary-foreground: #ffffff;
-  --secondary: #e5e5e5;
-  --secondary-foreground: #000000;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --accent: #f5f5f5;
-  --accent-foreground: #000000;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #dc2626;
+
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #6366f1;
+
+  --radius: 0.75rem;
+
+  --chart-1: #6366f1;
+  --chart-2: #8b5cf6;
+  --chart-3: #ec4899;
+  --chart-4: #14b8a6;
+  --chart-5: #f59e0b;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(17, 19, 43, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(30, 41, 59, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+/* Planetary Animations */
+@keyframes orbit {
+  0% {
+    transform: rotate(0deg) translateX(var(--orbit-radius)) rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg) translateX(var(--orbit-radius)) rotate(-360deg);
+  }
+}
+
+.orbit-container {
+  position: relative;
+  width: 600px;
+  height: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.planet {
+  position: absolute;
+  border-radius: 50%;
+  animation: orbit var(--orbit-duration) linear infinite;
+}
+
+.planet-track {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
-  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: var(--background);
@@ -108,5 +139,5 @@ body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
+  background: var(--muted-foreground);
 }
