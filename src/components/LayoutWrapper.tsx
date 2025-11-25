@@ -6,7 +6,7 @@ import { Header } from "@/components/layout/Header";
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isPublicPage = ["/login", "/register"].includes(pathname);
+  const isPublicPage = ["/login", "/register", "/"].includes(pathname);
 
   if (isPublicPage) {
     return (
