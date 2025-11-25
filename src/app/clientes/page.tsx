@@ -1,26 +1,22 @@
-import { ModuleHeader } from "@/components/ui/ModuleHeader";
-import { Users, Plus } from "lucide-react";
+"use client";
+
+import { ClientManager } from "@/components/crm/ClientManager";
+import { Users } from "lucide-react";
 
 export default function ClientesPage() {
   return (
-    <div>
-      <ModuleHeader 
-        title="Clientes / CRM" 
-        description="Gestión de base de datos de clientes."
-        icon={Users}
-        action={
-          <button className="bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md text-sm font-medium flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Nuevo Cliente
-          </button>
-        }
-      />
-      
-      <div className="bg-card border border-border rounded-xl p-6">
-        <div className="text-center py-12 text-muted-foreground">
-          <Users className="w-12 h-12 mx-auto mb-4 opacity-20" />
-          <p>Base de datos de clientes vacía.</p>
+    <div className="space-y-6">
+      <div className="flex items-center gap-4 mb-8">
+        <div className="p-3 bg-indigo-500/10 rounded-xl text-indigo-400">
+          <Users className="w-8 h-8" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-white">Clientes</h1>
+          <p className="text-indigo-200/60">Gestión de relaciones y facturación</p>
         </div>
       </div>
+
+      <ClientManager />
     </div>
   );
 }

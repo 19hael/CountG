@@ -160,10 +160,7 @@ export default function LandingPage() {
 
             <div className="mt-8 pt-6 border-t border-white/5 text-center">
               <p className="text-sm text-indigo-200/60">
-                ¿Aún no tienes acceso?{" "}
-                <button onClick={() => router.push('/register')} className="text-indigo-400 hover:text-indigo-300 font-medium hover:underline transition-colors">
-                  Solicitar demo
-                </button>
+                Acceso exclusivo para clientes corporativos.
               </p>
             </div>
           </motion.div>
