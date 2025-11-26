@@ -49,7 +49,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    router.push("/login");
+    try {
+      await fetch('/api/auth/set-cookie', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'SIGNED_OUT' }),
+      });
+    } catch (e) {
+      console.warn('Failed to clear server auth cookie', e);
+    }
+    router.push('/login');
   };
 
   return (

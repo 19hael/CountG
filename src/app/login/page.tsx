@@ -19,13 +19,26 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
-      router.push("/");
+
+      // Send auth data to server to set cookies so middleware can detect the session
+      try {
+        await fetch('/api/auth/set-cookie', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+      } catch (e) {
+        // non-fatal: cookie-setting failed, but continue to route client-side
+        console.warn('Failed to set auth cookie', e);
+      }
+
+      router.push('/');
     } catch (err: any) {
       setError(err.message || "Error al iniciar sesión");
     } finally {
