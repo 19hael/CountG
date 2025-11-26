@@ -5,7 +5,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const supabase = createPagesServerClient({ req, res });
 
   try {
-    const { event, session, access_token, refresh_token } = req.body;
+    const { event, session } = req.body;
+    
+    // Extract tokens either from top-level (if sent that way) or from session object
+    const access_token = req.body.access_token || session?.access_token;
+    const refresh_token = req.body.refresh_token || session?.refresh_token;
 
     if (event === 'SIGNED_OUT') {
       await supabase.auth.signOut();
