@@ -42,6 +42,7 @@ export default function LandingPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
+          credentials: 'include',
         });
       } catch (e) {
         console.warn('Failed to set auth cookie', e);

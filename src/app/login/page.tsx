@@ -32,6 +32,7 @@ export default function LoginPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(data),
+          credentials: 'include',
         });
       } catch (e) {
         // non-fatal: cookie-setting failed, but continue to route client-side
