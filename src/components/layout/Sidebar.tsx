@@ -9,6 +9,11 @@ import {
   Users, 
   Calendar, 
   FileText, 
+  ShoppingBag,
+  Receipt,
+  ShoppingCart,
+  Briefcase,
+  FolderKanban,
   LogOut
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,8 +21,12 @@ import { useAuth } from "@/components/AuthProvider";
 
 const menuItems = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
-  { name: "Contabilidad", href: "/contabilidad", icon: Calculator },
+  { name: "POS", href: "/pos", icon: ShoppingBag },
+  { name: "Facturación", href: "/facturacion", icon: Receipt },
+  { name: "Compras", href: "/compras", icon: ShoppingCart },
   { name: "Inventario", href: "/inventario", icon: Package },
+  { name: "Proyectos", href: "/proyectos", icon: FolderKanban },
+  { name: "RRHH", href: "/rrhh", icon: Briefcase },
   { name: "Clientes", href: "/clientes", icon: Users },
   { name: "Agenda", href: "/agenda", icon: Calendar },
   { name: "Reportes", href: "/reportes", icon: FileText },

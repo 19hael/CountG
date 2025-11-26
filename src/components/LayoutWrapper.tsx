@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
+import { AIAssistant } from "@/components/ai/AIAssistant";
 
 export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,6 +28,7 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
             {children}
           </div>
         </main>
+        <AIAssistant />
       </div>
     </div>
   );

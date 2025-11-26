@@ -3,7 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: Request) {
   try {
-    const { message } = await req.json();
+    const { message, context, mode } = await req.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
@@ -13,6 +13,27 @@ export async function POST(req: Request) {
     const client = new GoogleGenAI({ apiKey });
 
     const model = "gemini-2.0-flash-lite";
+
+    let systemInstructionText = `Eres Vixai, un asistente de negocios de élite impulsado por IA. 
+          Tu objetivo es ayudar a los dueños de negocios a optimizar sus ventas, reducir gastos y tomar decisiones estratégicas.
+          
+          Tienes acceso a conocimientos generales sobre:
+          - Estrategias de ventas y marketing.
+          - Optimización de inventario.
+          - Análisis financiero básico.
+          - Gestión de clientes.
+
+          Responde siempre de manera profesional, concisa y estratégica. Usa un tono elegante y motivador.`;
+
+    if (context) {
+      systemInstructionText += `\n\nContexto actual del usuario: ${JSON.stringify(context)}`;
+    }
+
+    if (mode === 'financial_analyst') {
+      systemInstructionText += `\n\nActúa como un Analista Financiero Senior. Enfócate en márgenes, rentabilidad, flujo de caja y reducción de costos. Sé directo y numérico.`;
+    } else if (mode === 'admin_copilot') {
+      systemInstructionText += `\n\nActúa como un Copiloto Administrativo. Tu trabajo es ejecutar tareas. Si el usuario te pide registrar algo, confirma los datos y simula la acción.`;
+    }
 
     const response = await client.models.generateContent({
       model: model,
@@ -28,30 +49,15 @@ export async function POST(req: Request) {
         systemInstruction: {
           parts: [
             {
-              text: `Eres Vixai, un asistente de negocios de élite impulsado por IA. 
-          Tu objetivo es ayudar a los dueños de negocios a optimizar sus ventas, reducir gastos y tomar decisiones estratégicas.
-          
-          Tienes acceso a conocimientos generales sobre:
-          - Estrategias de ventas y marketing.
-          - Optimización de inventario.
-          - Análisis financiero básico.
-          - Gestión de clientes.
-
-          Responde siempre de manera profesional, concisa y estratégica. Usa un tono elegante y motivador.
-          Si te preguntan sobre datos específicos del negocio (como "cuánto vendí hoy"), responde que en esta versión beta estás analizando los patrones generales, pero pronto tendrás acceso directo a la base de datos en tiempo real.`
+              text: systemInstructionText
             }
           ]
-        },
-        thinkingConfig: {
-          thinkingLevel: "HIGH",
         },
         tools: [{ googleSearch: {} }]
       },
     });
 
-    // Handle the response. The new SDK response object typically has a text() method.
-    // We need to be careful if the response is blocked or empty.
-    const reply = response.text ? response.text() : "Lo siento, no pude generar una respuesta en este momento.";
+    const reply = response.text || "Lo siento, no pude generar una respuesta en este momento.";
 
     return NextResponse.json({ reply });
   } catch (error: any) {
