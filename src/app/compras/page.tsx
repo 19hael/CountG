@@ -1,23 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ModuleHeader } from "@/components/ui/ModuleHeader";
 import { SmartTable } from "@/components/ui/SmartTable";
 import { ShoppingCart, Truck, Plus, FileText } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function ComprasPage() {
   const [activeTab, setActiveTab] = useState<'orders' | 'providers'>('orders');
 
-  // Mock Data
-  const orders = [
-    { id: 1, numero: "OC-2024-001", proveedor: "Distribuidora Central", fecha: "2024-03-22", total: 5400.00, estado: "Recibido" },
-    { id: 2, numero: "OC-2024-002", proveedor: "Importaciones Tech", fecha: "2024-03-23", total: 1200.00, estado: "Pendiente" },
-  ];
+  const [orders, setOrders] = useState<any[]>([]);
+  const [providers, setProviders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const providers = [
-    { id: 1, nombre: "Distribuidora Central", contacto: "Carlos Ruiz", telefono: "555-0123", email: "ventas@distcentral.com" },
-    { id: 2, nombre: "Importaciones Tech", contacto: "Ana Silva", telefono: "555-0987", email: "contacto@itech.com" },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [ordersRes, providersRes] = await Promise.all([
+          supabase.from('ordenes_compra').select('*').order('fecha', { ascending: false }),
+          supabase.from('proveedores').select('*').order('nombre')
+        ]);
+
+        if (ordersRes.error) throw ordersRes.error;
+        if (providersRes.error) throw providersRes.error;
+
+        setOrders(ordersRes.data || []);
+        setProviders(providersRes.data || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const orderColumns = [
     { key: "numero", label: "N° Orden" },
@@ -84,9 +101,9 @@ export default function ComprasPage() {
             title="Órdenes de Compra"
             data={orders}
             columns={orderColumns}
-            loading={false}
-            onAdd={() => console.log("New Order")}
-            onEdit={(row) => console.log("Edit Order", row)}
+            loading={loading}
+            onAdd={() => {}}
+            onEdit={(row) => {}}
           />
         )}
 
@@ -96,8 +113,8 @@ export default function ComprasPage() {
             data={providers}
             columns={providerColumns}
             loading={false}
-            onAdd={() => console.log("New Provider")}
-            onEdit={(row) => console.log("Edit Provider", row)}
+            onAdd={() => {}}
+            onEdit={(row) => {}}
           />
         )}
       </div>

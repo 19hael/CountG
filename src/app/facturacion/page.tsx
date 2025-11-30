@@ -11,15 +11,23 @@ export default function FacturacionPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Mock data for now, or fetch from 'facturas' if table exists
-    // In a real scenario, we would fetch from Supabase
-    const mockInvoices = [
-      { id: 1, numero: "F001-00001", cliente: "Juan Perez", fecha: "2024-03-20", total: 150.00, estado: "Pagada" },
-      { id: 2, numero: "F001-00002", cliente: "Empresa ABC", fecha: "2024-03-21", total: 1250.50, estado: "Pendiente" },
-      { id: 3, numero: "F001-00003", cliente: "Maria Lopez", fecha: "2024-03-21", total: 45.00, estado: "Pagada" },
-    ];
-    setInvoices(mockInvoices);
-    setLoading(false);
+    const fetchInvoices = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('facturas')
+          .select('*')
+          .order('fecha', { ascending: false });
+        
+        if (error) throw error;
+        setInvoices(data || []);
+      } catch (error) {
+        console.error('Error fetching invoices:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoices();
   }, []);
 
   const columns = [
@@ -62,8 +70,8 @@ export default function FacturacionPage() {
         data={invoices}
         columns={columns}
         loading={loading}
-        onEdit={(row) => console.log("View invoice", row)}
-        onDelete={(row) => console.log("Void invoice", row)}
+        onEdit={(row) => {}}
+        onDelete={(row) => {}}
       />
     </div>
   );

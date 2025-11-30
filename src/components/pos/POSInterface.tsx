@@ -144,16 +144,13 @@ export function POSInterface() {
             <span className="text-sm text-indigo-200/60">{cart.length} items</span>
           </div>
           
-          {/* Customer Selector Mock */}
-          <button className="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-colors text-left">
-            <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
-              <User className="w-4 h-4 text-indigo-400" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-white">Cliente General</p>
-              <p className="text-xs text-indigo-200/40">Consumidor Final</p>
-            </div>
-          </button>
+          {/* Customer Selector */}
+          <div className="w-full">
+            <select className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50">
+              <option value="general">Cliente General</option>
+              {/* We would map real customers here if we fetched them */}
+            </select>
+          </div>
         </div>
 
         {/* Cart Items */}

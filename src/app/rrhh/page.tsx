@@ -1,17 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ModuleHeader } from "@/components/ui/ModuleHeader";
 import { SmartTable } from "@/components/ui/SmartTable";
-import { Users, UserPlus, Briefcase } from "lucide-react";
+import { Users, Briefcase } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 export default function RRHHPage() {
-  // Mock Data
-  const employees = [
-    { id: 1, nombre: "Roberto Gómez", cargo: "Vendedor Senior", salario: 1200.00, inicio: "2023-01-15" },
-    { id: 2, nombre: "Laura Martínez", cargo: "Contadora", salario: 1500.00, inicio: "2023-03-01" },
-    { id: 3, nombre: "Pedro Sánchez", cargo: "Almacenero", salario: 950.00, inicio: "2023-06-10" },
-  ];
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('empleados')
+          .select('*')
+          .order('nombre');
+        
+        if (error) throw error;
+        setEmployees(data || []);
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEmployees();
+  }, []);
 
   const columns = [
     { key: "nombre", label: "Nombre" },
@@ -60,9 +77,9 @@ export default function RRHHPage() {
         title="Planilla de Empleados"
         data={employees}
         columns={columns}
-        loading={false}
-        onAdd={() => console.log("New Employee")}
-        onEdit={(row) => console.log("Edit Employee", row)}
+        loading={loading}
+        onAdd={() => {}}
+        onEdit={(row) => {}}
       />
     </div>
   );
