@@ -17,7 +17,10 @@ export function Header() {
       </div>
       
       <div className="flex items-center gap-4">
-        <button className="relative p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+        <button 
+          onClick={() => alert("No tienes notificaciones nuevas por el momento.")}
+          className="relative p-2 rounded-full hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+        >
           <Bell className="w-5 h-5" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full border-2 border-card"></span>
         </button>

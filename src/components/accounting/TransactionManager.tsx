@@ -5,60 +5,64 @@ import { supabase } from "@/lib/supabase";
 import { CSVExportButton } from "./CSVExportButton";
 import { Loader2, Plus, ArrowUpRight, ArrowDownRight } from "lucide-react";
 
+import { TransactionModal } from "./TransactionModal";
+
 export function TransactionManager() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  async function fetchTransactions() {
+    setLoading(true);
+    try {
+      // Fetch Invoices (Income)
+      const { data: invoices } = await supabase
+        .from('facturas')
+        .select('id, numero, fecha, total, estado, descripcion')
+        .order('fecha', { ascending: false });
+
+      // Fetch Expenses
+      const { data: expenses } = await supabase
+        .from('gastos')
+        .select('id, descripcion, fecha, monto, categoria')
+        .order('fecha', { ascending: false });
+
+      // Normalize data
+      const incomeTx = invoices?.map((inv: any) => ({
+        id: inv.id,
+        date: new Date(inv.fecha).toLocaleDateString(),
+        description: `Factura #${inv.numero} - ${inv.descripcion || ''}`,
+        amount: inv.total,
+        type: 'income',
+        status: inv.estado,
+        category: 'Ventas'
+      })) || [];
+
+      const expenseTx = expenses?.map((exp: any) => ({
+        id: exp.id,
+        date: new Date(exp.fecha).toLocaleDateString(),
+        description: exp.descripcion,
+        amount: exp.monto,
+        type: 'expense',
+        status: 'pagado', // Expenses are usually immediate, or add status field to table
+        category: exp.categoria || 'General'
+      })) || [];
+
+      // Merge and sort
+      const allTx = [...incomeTx, ...expenseTx].sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+
+      setTransactions(allTx);
+    } catch (error) {
+      console.error("Error fetching transactions:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
-    async function fetchTransactions() {
-      try {
-        // Fetch Invoices (Income)
-        const { data: invoices } = await supabase
-          .from('facturas')
-          .select('id, numero, fecha, total, estado, descripcion')
-          .order('fecha', { ascending: false });
-
-        // Fetch Expenses
-        const { data: expenses } = await supabase
-          .from('gastos')
-          .select('id, descripcion, fecha, monto, categoria')
-          .order('fecha', { ascending: false });
-
-        // Normalize data
-        const incomeTx = invoices?.map((inv: any) => ({
-          id: inv.id,
-          date: new Date(inv.fecha).toLocaleDateString(),
-          description: `Factura #${inv.numero} - ${inv.descripcion || ''}`,
-          amount: inv.total,
-          type: 'income',
-          status: inv.estado,
-          category: 'Ventas'
-        })) || [];
-
-        const expenseTx = expenses?.map((exp: any) => ({
-          id: exp.id,
-          date: new Date(exp.fecha).toLocaleDateString(),
-          description: exp.descripcion,
-          amount: exp.monto,
-          type: 'expense',
-          status: 'pagado', // Expenses are usually immediate, or add status field to table
-          category: exp.categoria || 'General'
-        })) || [];
-
-        // Merge and sort
-        const allTx = [...incomeTx, ...expenseTx].sort((a, b) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-
-        setTransactions(allTx);
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     fetchTransactions();
   }, []);
 
@@ -94,11 +98,24 @@ export function TransactionManager() {
         </div>
         <div className="flex gap-2">
           <CSVExportButton data={filteredTx} filename="transacciones.csv" />
-          <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors">
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors"
+          >
             <Plus className="w-4 h-4" /> Nueva Transacción
           </button>
         </div>
       </div>
+
+      <TransactionModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        onSuccess={() => {
+          fetchTransactions();
+          setIsModalOpen(false);
+        }}
+        type="ingreso" // Default to income or add selector
+      />
 
       <div className="glass rounded-xl border border-white/5 overflow-hidden">
         <table className="w-full text-sm text-left">

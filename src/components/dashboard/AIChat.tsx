@@ -148,7 +148,9 @@ export function AIChat() {
                 <div className="flex justify-start">
                   <div className="bg-white/5 p-4 rounded-2xl rounded-tl-none border border-white/5 flex items-center gap-3">
                     <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
-                    <span className="text-xs text-indigo-200 animate-pulse">Consultando fuentes en tiempo real...</span>
+                    <span className="text-xs text-indigo-200 animate-pulse">
+                      Vixai está analizando y ejecutando acciones...
+                    </span>
                   </div>
                 </div>
               )}

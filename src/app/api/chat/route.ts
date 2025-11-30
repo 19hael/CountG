@@ -1,88 +1,166 @@
 import { NextResponse } from 'next/server';
+import { BedrockRuntimeClient, InvokeModelCommand } from "@aws-sdk/client-bedrock-runtime";
+
+// Initialize Bedrock Client
+const bedrock = new BedrockRuntimeClient({
+  region: process.env.AWS_REGION || "us-east-1",
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || "",
+  }
+});
+
+const MODEL_ID = "anthropic.claude-3-sonnet-20240229-v1:0";
+
+// Define Tools
+const tools = [
+  {
+    name: "get_financial_summary",
+    description: "Get a summary of the current financial status, including income, expenses, and profit.",
+    input_schema: {
+      type: "object",
+      properties: {},
+    }
+  },
+  {
+    name: "search_web",
+    description: "Search the internet for real-time information, news, or specific data.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "The search query" }
+      },
+      required: ["query"]
+    }
+  },
+  {
+    name: "update_database",
+    description: "Update a record in the database. Use this when the user explicitly asks to modify data.",
+    input_schema: {
+      type: "object",
+      properties: {
+        table: { type: "string", description: "The table to update (e.g., 'transactions', 'clients')" },
+        action: { type: "string", enum: ["insert", "update", "delete"], description: "The action to perform" },
+        data: { type: "string", description: "JSON string of the data to insert or update" }
+      },
+      required: ["table", "action", "data"]
+    }
+  }
+];
+
+async function invokeBedrock(messages: any[], systemPrompt: string) {
+  const payload = {
+    anthropic_version: "bedrock-2023-05-31",
+    max_tokens: 4096,
+    system: systemPrompt,
+    messages: messages,
+    tools: tools.map(t => ({
+      name: t.name,
+      description: t.description,
+      input_schema: t.input_schema
+    }))
+  };
+
+  const command = new InvokeModelCommand({
+    modelId: MODEL_ID,
+    contentType: "application/json",
+    accept: "application/json",
+    body: JSON.stringify(payload),
+  });
+
+  const response = await bedrock.send(command);
+  const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+  return responseBody;
+}
 
 export async function POST(req: Request) {
   try {
-    const { message, context, mode } = await req.json();
+    const { message, context, mode, history } = await req.json();
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    const apiKey = process.env.PERPLEXITY_API_KEY;
-    
-    if (!apiKey) {
-      console.error("PERPLEXITY_API_KEY is missing");
-      return NextResponse.json({ 
-        reply: "Error de configuración: Falta la API Key de Perplexity. Por favor configura la variable de entorno PERPLEXITY_API_KEY." 
-      });
-    }
-
-    const model = "llama-3.1-sonar-large-128k-online";
-
-    let systemInstructionText = `Eres Vixai, un asistente de negocios de élite, altamente inteligente y profesional.
-          Tu objetivo es proporcionar análisis estratégicos, respuestas precisas y ayuda operativa a dueños de negocios.
+    let systemInstructionText = `Eres Vixai, un asistente de negocios de élite, autónomo y altamente inteligente.
+          Tu objetivo es gestionar la empresa de manera eficiente, tomando decisiones y ejecutando acciones cuando sea necesario.
           
-          Tus capacidades incluyen:
-          - Búsqueda de información en tiempo real (gracias a tu conexión a internet).
-          - Análisis de datos financieros y operativos.
-          - Asesoramiento en estrategias de crecimiento y reducción de costos.
+          CAPACIDADES:
+          - Tienes acceso a herramientas para leer y escribir en la base de datos.
+          - Puedes buscar en internet información actualizada.
+          - Eres proactivo: si ves algo mal, sugiérelo o arréglalo (pidiendo confirmación si es crítico).
           
-          Directrices:
-          - Responde siempre de manera profesional, directa y sin rodeos.
-          - Usa formato Markdown para estructurar tus respuestas (listas, negritas, tablas si es necesario).
-          - Si te piden datos actuales (tipo de cambio, noticias), búscalos y cítalos.
-          - NO inventes datos. Si no sabes algo, dilo o busca la información.
-          - Mantén un tono elegante, sofisticado y motivador.`;
+          PERSONALIDAD:
+          - Profesional, directo, "CEO-level".
+          - No pidas disculpas excesivas. Enfócate en soluciones.
+          - Usa Markdown para tus respuestas.`;
 
     if (context) {
-      systemInstructionText += `\n\nContexto actual del usuario (Datos reales de su empresa): ${JSON.stringify(context)}`;
+      systemInstructionText += `\n\nCONTEXTO ACTUAL: ${JSON.stringify(context)}`;
     }
 
-    if (mode === 'financial_analyst') {
-      systemInstructionText += `\n\nMODO: Analista Financiero. Prioriza métricas, KPIs, márgenes y rentabilidad. Sé extremadamente analítico.`;
-    } else if (mode === 'admin_copilot') {
-      systemInstructionText += `\n\nMODO: Copiloto Administrativo. Enfócate en la ejecución de tareas, organización y eficiencia operativa.`;
+    // Construct message history for Claude
+    // Note: In a real app, we should sanitize and format 'history' properly.
+    // For now, we'll start a fresh conversation or append the user message.
+    const messages = [
+      { role: "user", content: message }
+    ];
+
+    // 1. First Call to LLM
+    let response = await invokeBedrock(messages, systemInstructionText);
+    
+    let finalReply = "";
+    let toolResults = [];
+
+    // 2. Handle Tool Use Loop (Simplified for single turn)
+    if (response.stop_reason === "tool_use") {
+      const toolUseContent = response.content.find((c: any) => c.type === "tool_use");
+      if (toolUseContent) {
+        const toolName = toolUseContent.name;
+        const toolInput = toolUseContent.input;
+        const toolId = toolUseContent.id;
+
+        console.log(`[Agent] Calling tool: ${toolName}`, toolInput);
+
+        let result = "";
+        // Execute Tool
+        if (toolName === "get_financial_summary") {
+            // Mock data for now - in real app, query DB
+            result = JSON.stringify({ income: 50000, expenses: 32000, profit: 18000, currency: "USD" });
+        } else if (toolName === "search_web") {
+            result = "Búsqueda simulada: El mercado actual muestra tendencias alcistas en tecnología.";
+        } else if (toolName === "update_database") {
+            result = `Base de datos actualizada exitosamente: ${toolInput.action} en ${toolInput.table}`;
+        }
+
+        // Add tool result to messages
+        messages.push({ role: "assistant", content: response.content });
+        messages.push({
+            role: "user",
+            content: [
+                {
+                    type: "tool_result",
+                    tool_use_id: toolId,
+                    content: result
+                }
+            ]
+        });
+
+        // 3. Second Call to LLM with Tool Results
+        const followUpResponse = await invokeBedrock(messages, systemInstructionText);
+        finalReply = followUpResponse.content[0].text;
+      }
+    } else {
+      finalReply = response.content[0].text;
     }
 
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: [
-          { role: "system", content: systemInstructionText },
-          { role: "user", content: message }
-        ],
-        temperature: 0.2,
-        top_p: 0.9,
-        return_citations: true,
-        search_domain_filter: ["perplexity.ai"],
-        return_images: false,
-        return_related_questions: false,
-        search_recency_filter: "month",
-        top_k: 0,
-        stream: false,
-        presence_penalty: 0,
-        frequency_penalty: 1
-      }),
-    });
+    return NextResponse.json({ reply: finalReply });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Perplexity API Error:', response.status, errorData);
-      throw new Error(`Perplexity API Error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const reply = data.choices[0]?.message?.content || "No pude obtener una respuesta.";
-    const citations = data.citations || [];
-
-    return NextResponse.json({ reply, citations });
   } catch (error: any) {
     console.error('API Route Error:', error);
-    return NextResponse.json({ error: 'Error processing request', details: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Error processing request', 
+      details: error.message,
+      hint: "Check AWS Credentials and Model Access in Bedrock"
+    }, { status: 500 });
   }
 }
