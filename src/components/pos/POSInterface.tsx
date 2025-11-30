@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, User } from "lucide-react";
+import { Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, Banknote, User, Check, X, Percent } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface Product {
@@ -16,20 +16,31 @@ interface CartItem extends Product {
   quantity: number;
 }
 
+interface Customer {
+  id: string;
+  nombre: string;
+  email?: string;
+}
+
 export function POSInterface() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("Todos");
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [discount, setDiscount] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   useEffect(() => {
     fetchProducts();
+    fetchCustomers();
   }, []);
 
   const fetchProducts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('productos')
       .select('*')
       .order('nombre');
@@ -38,10 +49,27 @@ export function POSInterface() {
     setLoading(false);
   };
 
+  const fetchCustomers = async () => {
+    const { data } = await supabase
+      .from('clientes')
+      .select('id, nombre, email')
+      .order('nombre');
+    
+    if (data) setCustomers(data);
+  };
+
   const addToCart = (product: Product) => {
+    if (product.stock_actual < 1) {
+      alert("Producto sin stock");
+      return;
+    }
     setCart(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
+        if (existing.quantity >= product.stock_actual) {
+          alert("No hay suficiente stock");
+          return prev;
+        }
         return prev.map(item => 
           item.id === product.id 
             ? { ...item, quantity: item.quantity + 1 }
@@ -59,14 +87,62 @@ export function POSInterface() {
   const updateQuantity = (productId: string, delta: number) => {
     setCart(prev => prev.map(item => {
       if (item.id === productId) {
-        const newQuantity = Math.max(1, item.quantity + delta);
+        const newQuantity = Math.max(1, Math.min(item.stock_actual, item.quantity + delta));
         return { ...item, quantity: newQuantity };
       }
       return item;
     }));
   };
 
-  const total = cart.reduce((sum, item) => sum + (item.precio_venta * item.quantity), 0);
+  const subtotal = cart.reduce((sum, item) => sum + (item.precio_venta * item.quantity), 0);
+  const discountAmount = subtotal * (discount / 100);
+  const total = subtotal - discountAmount;
+
+  const processSale = async (paymentMethod: 'cash' | 'card') => {
+    if (cart.length === 0) {
+      alert("El carrito está vacío");
+      return;
+    }
+
+    try {
+      // Create invoice
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('facturas')
+        .insert([{
+          cliente: selectedCustomer?.nombre || "Cliente General",
+          fecha: new Date().toISOString().split('T')[0],
+          total: total,
+          estado: "Pagada",
+          metodo_pago: paymentMethod === 'cash' ? 'Efectivo' : 'Tarjeta',
+          descuento: discount
+        }])
+        .select()
+        .single();
+
+      if (invoiceError) throw invoiceError;
+
+      // Update stock
+      for (const item of cart) {
+        await supabase
+          .from('productos')
+          .update({ stock_actual: item.stock_actual - item.quantity })
+          .eq('id', item.id);
+      }
+
+      // Clear cart and show success
+      setCart([]);
+      setDiscount(0);
+      setSelectedCustomer(null);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      
+      // Refresh products
+      fetchProducts();
+    } catch (error) {
+      console.error('Error processing sale:', error);
+      alert("Error al procesar la venta");
+    }
+  };
 
   const filteredProducts = products.filter(p => 
     (selectedCategory === "Todos" || p.categoria === selectedCategory) &&
@@ -77,6 +153,14 @@ export function POSInterface() {
 
   return (
     <div className="flex h-[calc(100vh-100px)] gap-6">
+      {/* Success Message */}
+      {showSuccess && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top">
+          <Check className="w-6 h-6" />
+          <span className="font-medium">¡Venta procesada exitosamente!</span>
+        </div>
+      )}
+
       {/* Product Grid */}
       <div className="flex-1 flex flex-col gap-6">
         {/* Search & Filter */}
@@ -109,18 +193,21 @@ export function POSInterface() {
         </div>
 
         {/* Grid */}
-        <div className="grid grid-cols-3 gap-4 overflow-y-auto pr-2">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 overflow-y-auto pr-2">
           {filteredProducts.map(product => (
             <button
               key={product.id}
               onClick={() => addToCart(product)}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 text-left hover:border-indigo-500/50 hover:bg-white/10 transition-all group"
+              disabled={product.stock_actual < 1}
+              className="bg-white/5 border border-white/10 rounded-xl p-4 text-left hover:border-indigo-500/50 hover:bg-white/10 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <div className="flex justify-between items-start mb-2">
                 <span className="text-xs font-medium px-2 py-1 rounded-md bg-indigo-500/10 text-indigo-400">
                   {product.categoria}
                 </span>
-                <span className="text-xs text-indigo-200/40">Stock: {product.stock_actual}</span>
+                <span className={`text-xs ${product.stock_actual > 10 ? 'text-emerald-400' : product.stock_actual > 0 ? 'text-amber-400' : 'text-red-400'}`}>
+                  Stock: {product.stock_actual}
+                </span>
               </div>
               <h3 className="text-white font-medium truncate mb-1 group-hover:text-indigo-300 transition-colors">
                 {product.nombre}
@@ -146,9 +233,21 @@ export function POSInterface() {
           
           {/* Customer Selector */}
           <div className="w-full">
-            <select className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50">
-              <option value="general">Cliente General</option>
-              {/* We would map real customers here if we fetched them */}
+            <label className="text-xs text-indigo-200/60 mb-2 block">Cliente</label>
+            <select 
+              value={selectedCustomer?.id || ""}
+              onChange={(e) => {
+                const customer = customers.find(c => c.id === e.target.value);
+                setSelectedCustomer(customer || null);
+              }}
+              className="w-full p-3 rounded-xl bg-white/5 border border-white/10 text-white text-sm focus:outline-none focus:border-indigo-500/50"
+            >
+              <option value="">Cliente General</option>
+              {customers.map(customer => (
+                <option key={customer.id} value={customer.id}>
+                  {customer.nombre}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -169,7 +268,7 @@ export function POSInterface() {
                   >
                     <Minus className="w-3 h-3" />
                   </button>
-                  <span className="text-sm font-medium text-white w-4 text-center">{item.quantity}</span>
+                  <span className="text-sm font-medium text-white w-8 text-center">{item.quantity}</span>
                   <button 
                     onClick={() => updateQuantity(item.id, 1)}
                     className="p-1 hover:text-white text-indigo-200/40 transition-colors"
@@ -190,15 +289,27 @@ export function POSInterface() {
 
         {/* Totals & Actions */}
         <div className="p-6 bg-black/20 border-t border-white/10 mt-auto">
-          <div className="space-y-2 mb-6">
+          <div className="space-y-3 mb-6">
             <div className="flex justify-between text-sm text-indigo-200/60">
               <span>Subtotal</span>
-              <span>${(total / 1.18).toFixed(2)}</span>
+              <span>${subtotal.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between text-sm text-indigo-200/60">
-              <span>Impuestos (18%)</span>
-              <span>${(total - (total / 1.18)).toFixed(2)}</span>
+            
+            {/* Discount Input */}
+            <div className="flex items-center gap-2">
+              <Percent className="w-4 h-4 text-indigo-400" />
+              <input
+                type="number"
+                min="0"
+                max="100"
+                value={discount}
+                onChange={(e) => setDiscount(Math.min(100, Math.max(0, parseFloat(e.target.value) || 0)))}
+                placeholder="Descuento %"
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
+              />
+              <span className="text-sm text-indigo-200/60">-${discountAmount.toFixed(2)}</span>
             </div>
+
             <div className="flex justify-between text-xl font-bold text-white pt-2 border-t border-white/10">
               <span>Total</span>
               <span>${total.toFixed(2)}</span>
@@ -206,11 +317,19 @@ export function POSInterface() {
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white transition-colors">
+            <button 
+              onClick={() => processSale('card')}
+              disabled={cart.length === 0}
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-indigo-500 hover:bg-indigo-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <CreditCard className="w-5 h-5" />
               <span className="text-sm font-medium">Tarjeta</span>
             </button>
-            <button className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-colors">
+            <button 
+              onClick={() => processSale('cash')}
+              disabled={cart.length === 0}
+              className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               <Banknote className="w-5 h-5" />
               <span className="text-sm font-medium">Efectivo</span>
             </button>

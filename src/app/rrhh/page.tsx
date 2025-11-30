@@ -5,30 +5,32 @@ import { ModuleHeader } from "@/components/ui/ModuleHeader";
 import { SmartTable } from "@/components/ui/SmartTable";
 import { Users, Briefcase } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { ModalForm } from "@/components/ui/ModalForm";
 
 export default function RRHHPage() {
   const [employees, setEmployees] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('empleados')
-          .select('*')
-          .order('nombre');
-        
-        if (error) throw error;
-        setEmployees(data || []);
-      } catch (error) {
-        console.error('Error fetching employees:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchEmployees();
   }, []);
+
+  async function fetchEmployees() {
+    try {
+      const { data, error } = await supabase
+        .from('empleados')
+        .select('*')
+        .order('nombre');
+      
+      if (error) throw error;
+      setEmployees(data || []);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const columns = [
     { key: "nombre", label: "Nombre" },
@@ -61,15 +63,19 @@ export default function RRHHPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
         <div className="bg-white/5 border border-white/10 p-6 rounded-xl">
           <h3 className="text-indigo-200/60 text-sm font-medium mb-2">Total Empleados</h3>
-          <p className="text-3xl font-bold text-white">3</p>
+          <p className="text-3xl font-bold text-white">{employees.length}</p>
         </div>
         <div className="bg-white/5 border border-white/10 p-6 rounded-xl">
           <h3 className="text-indigo-200/60 text-sm font-medium mb-2">Nómina Mensual</h3>
-          <p className="text-3xl font-bold text-white">$3,650.00</p>
+          <p className="text-3xl font-bold text-white">
+            ${employees.reduce((sum, emp) => sum + (emp.salario || 0), 0).toFixed(2)}
+          </p>
         </div>
         <div className="bg-white/5 border border-white/10 p-6 rounded-xl">
           <h3 className="text-indigo-200/60 text-sm font-medium mb-2">Próx. Pago</h3>
-          <p className="text-3xl font-bold text-emerald-400">30 Mar</p>
+          <p className="text-3xl font-bold text-emerald-400">
+            {new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
+          </p>
         </div>
       </div>
 
@@ -78,8 +84,24 @@ export default function RRHHPage() {
         data={employees}
         columns={columns}
         loading={loading}
-        onAdd={() => {}}
+        onAdd={() => setIsModalOpen(true)}
         onEdit={(row) => {}}
+      />
+
+      <ModalForm
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Nuevo Empleado"
+        fields={[
+          { name: "nombre", label: "Nombre Completo", type: "text" as const, required: true, placeholder: "Ej: Roberto Gómez" },
+          { name: "cargo", label: "Cargo", type: "text" as const, required: true, placeholder: "Ej: Vendedor Senior" },
+          { name: "salario", label: "Salario Base", type: "number" as const, required: true, placeholder: "0.00" },
+          { name: "inicio", label: "Fecha de Ingreso", type: "date" as const, required: true },
+          { name: "email", label: "Email", type: "email" as const, required: false, placeholder: "empleado@empresa.com" },
+          { name: "telefono", label: "Teléfono", type: "text" as const, required: false, placeholder: "+1 234 567 8900" },
+        ]}
+        tableName="empleados"
+        onSuccess={fetchEmployees}
       />
     </div>
   );

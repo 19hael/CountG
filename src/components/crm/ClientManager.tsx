@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { Loader2, Plus, Search, FileText, MoreVertical, Mail, Phone } from "lucide-react";
 import { CreateInvoiceModal } from "@/components/invoicing/CreateInvoiceModal";
+import { ModalForm } from "@/components/ui/ModalForm";
 
 export function ClientManager() {
   const [clients, setClients] = useState<any[]>([]);
@@ -11,6 +12,7 @@ export function ClientManager() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
   useEffect(() => {
     fetchClients();
@@ -40,6 +42,14 @@ export function ClientManager() {
     setIsInvoiceModalOpen(true);
   };
 
+  const clientFields = [
+    { name: "nombre", label: "Nombre Completo / Empresa", type: "text" as const, required: true, placeholder: "Ej: Juan Pérez o Empresa ABC" },
+    { name: "email", label: "Email", type: "email" as const, required: true, placeholder: "cliente@ejemplo.com" },
+    { name: "telefono", label: "Teléfono", type: "text" as const, required: false, placeholder: "+1 234 567 8900" },
+    { name: "direccion", label: "Dirección", type: "textarea" as const, required: false, placeholder: "Calle, Ciudad, País" },
+    { name: "ruc_dni", label: "RUC / DNI / ID", type: "text" as const, required: false, placeholder: "Número de identificación" },
+  ];
+
   if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-indigo-500" /></div>;
 
   return (
@@ -55,7 +65,10 @@ export function ClientManager() {
             className="w-full bg-[#11132b] border border-indigo-500/30 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/50"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors">
+        <button 
+          onClick={() => setIsClientModalOpen(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors"
+        >
           <Plus className="w-4 h-4" /> Nuevo Cliente
         </button>
       </div>
@@ -105,6 +118,15 @@ export function ClientManager() {
           onClose={() => setIsInvoiceModalOpen(false)} 
         />
       )}
+
+      <ModalForm
+        isOpen={isClientModalOpen}
+        onClose={() => setIsClientModalOpen(false)}
+        title="Nuevo Cliente"
+        fields={clientFields}
+        tableName="clientes"
+        onSuccess={fetchClients}
+      />
     </div>
   );
 }
